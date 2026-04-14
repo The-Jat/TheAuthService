@@ -20,12 +20,15 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body) {
-    const user = await this.authService.validate(body.email, body.password);
+      const { email, password, client_id, client_secret } = body;
 
-    if (!user) throw new UnauthorizedException();
+      const user = await this.authService.validate(email, password);
+      if (!user) throw new UnauthorizedException();
 
-    const token = await this.authService.generateToken(user);
-    return token;
+      const app = await this.authService.validateApp(client_id, client_secret);
+      if (!app) throw new UnauthorizedException('Invalid client');
+
+      return this.authService.generateToken(user, app);
   }
 
   @Get('me')
