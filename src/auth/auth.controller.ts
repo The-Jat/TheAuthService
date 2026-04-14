@@ -23,13 +23,7 @@ export class AuthController {
 
     if (!user) throw new UnauthorizedException();
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    };
-
-    return "hello";
+    const token = await this.authService.generateToken(user);
+    return token;
   }
 }
