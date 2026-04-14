@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -95,7 +95,7 @@ export class AuthService {
             );
 
             if (!tokens[0]) {
-                throw new Error('Invalid refresh token');
+                throw new UnauthorizedException('Invalid refresh token');
             }
 
             // generate new access token
@@ -112,7 +112,16 @@ export class AuthService {
                 access_token: newAccessToken,
             };
         } catch (err) {
-            throw new Error('Invalid or expired refresh token');
+            throw new UnauthorizedException('Invalid or expired refresh token');
         }
+    }
+
+    async logout(refreshToken: string) {
+        await this.db.query(
+            `DELETE FROM refresh_tokens WHERE token = $1`,
+            [refreshToken],
+        );
+
+        return { message: 'Logged out successfully' };
     }
 }
