@@ -24,4 +24,13 @@ export class UsersService {
 
     return users[0];
   }
+
+    async findById(id: number) {
+        const users = await this.db.query(
+            `SELECT * FROM users WHERE id = $1`,
+            [id],
+        );
+
+        return users[0];
+    }
 }

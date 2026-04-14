@@ -40,4 +40,17 @@ export class AuthService {
       access_token: this.jwtService.sign(payload),
     };
   }
+
+    async getProfile(userId: number) {
+        const user = await this.usersService.findById(userId);
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        // remove password before returning
+        const { password, ...safeUser } = user;
+
+        return safeUser;
+    }
 }
