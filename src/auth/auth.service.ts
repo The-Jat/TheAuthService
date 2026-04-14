@@ -116,10 +116,20 @@ export class AuthService {
         }
     }
 
-    async logout(refreshToken: string) {
+    async logout(refreshToken: string, accessToken: string) {
+        // delete refresh token
         await this.db.query(
             `DELETE FROM refresh_tokens WHERE token = $1`,
             [refreshToken],
+        );
+
+        // decode token to get expiry
+        const decoded: any = this.jwtService.decode(accessToken);
+
+        await this.db.query(
+            `INSERT INTO token_blacklist (token, expires_at)
+            VALUES ($1, to_timestamp($2))`,
+            [accessToken, decoded.exp],
         );
 
         return { message: 'Logged out successfully' };
