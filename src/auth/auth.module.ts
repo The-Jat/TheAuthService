@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/users/users.module';
 import { AuthCoreModule } from './auth-core.module';
 import { AppsModule } from 'src/apps/apps.module';
+import { DatabaseModule } from 'src/database/database.module';
 
 @Module({
   providers: [AuthService],
@@ -12,6 +13,7 @@ import { AppsModule } from 'src/apps/apps.module';
     UsersModule,
     AuthCoreModule,
     AppsModule,
+    DatabaseModule,
   ],
 })
 export class AuthModule {}

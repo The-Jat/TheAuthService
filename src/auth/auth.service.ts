@@ -3,6 +3,7 @@ import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AppsService } from 'src/apps/apps.service';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class AuthService {
@@ -10,6 +11,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private appsService: AppsService,
+    private db: DatabaseService,
 ) {}
 
   async signup(email: string, password: string, name: string) {
@@ -34,13 +36,28 @@ export class AuthService {
         const payload = {
             sub: user.id,
             email: user.email,
-            name: user.name,
             role: user.role,
             client_id: app.client_id,
         };
 
+        const accessToken = this.jwtService.sign(payload, {
+            expiresIn: '15m',
+        });
+
+        const refreshToken = this.jwtService.sign(payload, {
+            expiresIn: '7d',
+        });
+
+        // store refresh token in DB
+        await this.db.query(
+            `INSERT INTO refresh_tokens (user_id, token)
+            VALUES ($1, $2)`,
+            [user.id, refreshToken],
+        );
+
         return {
-            access_token: this.jwtService.sign(payload),
+            access_token: accessToken,
+            refresh_token: refreshToken,
         };
     }
 
@@ -65,5 +82,37 @@ export class AuthService {
         if (app.client_secret !== clientSecret) return null;
 
         return app;
+    }
+
+    async refreshToken(token: string) {
+        try {
+            const payload = this.jwtService.verify(token);
+
+            // check if token exists in DB
+            const tokens = await this.db.query(
+                `SELECT * FROM refresh_tokens WHERE token = $1`,
+                [token],
+            );
+
+            if (!tokens[0]) {
+                throw new Error('Invalid refresh token');
+            }
+
+            // generate new access token
+            const newAccessToken = this.jwtService.sign({
+                sub: payload.sub,
+                email: payload.email,
+                role: payload.role,
+                client_id: payload.client_id,
+            }, {
+                expiresIn: '15m',
+            });
+
+            return {
+                access_token: newAccessToken,
+            };
+        } catch (err) {
+            throw new Error('Invalid or expired refresh token');
+        }
     }
 }
