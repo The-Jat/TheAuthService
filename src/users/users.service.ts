@@ -1,36 +1,22 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { Inject, Injectable } from '@nestjs/common';
+import type { UserRepository } from './interfaces/user.repository';
 
 @Injectable()
 export class UsersService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    @Inject('UserRepository')
+    private userRepo: UserRepository,
+  ) {}
 
-  async createUser(email: string, password: string, name: string) {
-    const users = await this.db.query(
-      `INSERT INTO users (email, password, name)
-       VALUES ($1, $2, $3)
-       RETURNING *`,
-      [email, password, name],
-    );
+    createUser(email: string, password: string, name: string) {
+        return this.userRepo.create(email, password, name);
+    }
 
-    return users[0];
-  }
+    findByEmail(email: string) {
+        return this.userRepo.findByEmail(email);
+    }
 
-  async findByEmail(email: string) {
-    const users = await this.db.query(
-      `SELECT * FROM users WHERE email = $1`,
-      [email],
-    );
-
-    return users[0];
-  }
-
-    async findById(id: number) {
-        const users = await this.db.query(
-            `SELECT * FROM users WHERE id = $1`,
-            [id],
-        );
-
-        return users[0];
+    findById(id: number) {
+        return this.userRepo.findById(id);
     }
 }

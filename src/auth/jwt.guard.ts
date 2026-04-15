@@ -1,12 +1,13 @@
-import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { DatabaseService } from 'src/database/database.service';
+import type { BlacklistRepository } from './interfaces/blacklist.repository';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
     constructor(
         private jwtService: JwtService,
-        private db: DatabaseService,
+        @Inject('BlacklistRepository')
+        private blacklistRepo: BlacklistRepository,
     ) { }
 
 
@@ -22,12 +23,8 @@ export class JwtAuthGuard implements CanActivate {
         const token = authHeader.split(' ')[1];
 
         // check blacklist
-        const blacklisted = await this.db.query(
-            `SELECT * FROM token_blacklist WHERE token = $1`,
-            [token],
-        );
-
-        if (blacklisted[0]) {
+        const blacklisted = await this.blacklistRepo.exists(token);
+        if (blacklisted) {
             throw new UnauthorizedException('Token revoked');
         }
 

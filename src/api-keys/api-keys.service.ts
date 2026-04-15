@@ -1,16 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { Inject, Injectable } from '@nestjs/common';
+import type { ApiKeyRepository } from './interfaces/api-key.repository';
 
 @Injectable()
 export class ApiKeysService {
-  constructor(private db: DatabaseService) {}
+    constructor(
+        @Inject('ApiKeyRepository')
+        private apiKeyRepo: ApiKeyRepository
+    ) { }
 
-  async findKey(key: string) {
-    const keys = await this.db.query(
-      `SELECT * FROM api_keys WHERE key = $1 AND is_active = true`,
-      [key],
-    );
-
-    return keys[0];
-  }
+    findKey(key: string) {
+        return this.apiKeyRepo.findKey(key);
+    }
 }

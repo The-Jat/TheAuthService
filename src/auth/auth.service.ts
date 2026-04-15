@@ -1,17 +1,20 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { AppsService } from 'src/apps/apps.service';
-import { DatabaseService } from 'src/database/database.service';
-
+import type { TokenRepository } from './interfaces/token.repository';
+import type { BlacklistRepository } from './interfaces/blacklist.repository';
 @Injectable()
 export class AuthService {
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
     private appsService: AppsService,
-    private db: DatabaseService,
+    @Inject('TokenRepository')
+    private tokenRepo: TokenRepository,
+    @Inject('BlacklistRepository')
+    private blacklistRepo: BlacklistRepository,
 ) {}
 
   async signup(email: string, password: string, name: string) {
@@ -49,11 +52,7 @@ export class AuthService {
         });
 
         // store refresh token in DB
-        await this.db.query(
-            `INSERT INTO refresh_tokens (user_id, token)
-            VALUES ($1, $2)`,
-            [user.id, refreshToken],
-        );
+        await this.tokenRepo.saveRefreshToken(user.id, refreshToken);
 
         return {
             access_token: accessToken,
@@ -89,12 +88,9 @@ export class AuthService {
             const payload = this.jwtService.verify(token);
 
             // check if token exists in DB
-            const tokens = await this.db.query(
-                `SELECT * FROM refresh_tokens WHERE token = $1`,
-                [token],
-            );
+            const tokensExists = await this.tokenRepo.findRefreshToken(token);
 
-            if (!tokens[0]) {
+            if (!tokensExists) {
                 throw new UnauthorizedException('Invalid refresh token');
             }
 
@@ -118,19 +114,12 @@ export class AuthService {
 
     async logout(refreshToken: string, accessToken: string) {
         // delete refresh token
-        await this.db.query(
-            `DELETE FROM refresh_tokens WHERE token = $1`,
-            [refreshToken],
-        );
+        await this.tokenRepo.deleteRefreshToken(refreshToken);
 
         // decode token to get expiry
         const decoded: any = this.jwtService.decode(accessToken);
 
-        await this.db.query(
-            `INSERT INTO token_blacklist (token, expires_at)
-            VALUES ($1, to_timestamp($2))`,
-            [accessToken, decoded.exp],
-        );
+        await this.blacklistRepo.add(accessToken, decoded.exp);
 
         return { message: 'Logged out successfully' };
     }

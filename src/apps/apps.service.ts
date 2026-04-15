@@ -1,16 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../database/database.service';
+import { Inject, Injectable } from '@nestjs/common';
+import type { AppRepository } from './interfaces/app.repository';
 
 @Injectable()
 export class AppsService {
-  constructor(private db: DatabaseService) {}
+    constructor(
+        @Inject('AppRepository')
+        private appRepo: AppRepository,
+    ) { }
 
-  async findByClientId(clientId: string) {
-    const apps = await this.db.query(
-      `SELECT * FROM apps WHERE client_id = $1`,
-      [clientId],
-    );
-
-    return apps[0];
-  }
+    findByClientId(clientId: string) {
+        return this.appRepo.findByClientId(clientId);
+    }
 }
