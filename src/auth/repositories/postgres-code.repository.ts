@@ -6,11 +6,11 @@ import { CodeRepository } from "../interfaces/code.repository";
 export class PostgresCodeRepository implements CodeRepository {
   constructor(private db: DatabaseService) {}
 
-  async create(userId: number, clientId: string, code: string, expiresAt: number) {
+  async create(userId: number, clientId: string, code: string, expiresAt: number, redirectUri) {
     await this.db.query(
-      `INSERT INTO auth_codes (user_id, client_id, code, expires_at)
-       VALUES ($1, $2, $3, to_timestamp($4))`,
-      [userId, clientId, code, expiresAt],
+      `INSERT INTO auth_codes (user_id, client_id, code, expires_at, redirect_uri)
+       VALUES ($1, $2, $3, to_timestamp($4), $5)`,
+      [userId, clientId, code, expiresAt, redirectUri],
     );
   }
 

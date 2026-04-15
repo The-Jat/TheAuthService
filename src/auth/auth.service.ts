@@ -127,26 +127,36 @@ export class AuthService {
         return { message: 'Logged out successfully' };
     }
 
-    async saveCode(userId: number, clientId: string, code: string) {
+    async saveCode(userId: number, clientId: string, redirectUri: string, code: string) {
         const expiresAt = Math.floor(Date.now() / 1000) + 300; // 5 min
 
-        await this.codeRepo.create(userId, clientId, code, expiresAt);
+        await this.codeRepo.create(userId, clientId, code, expiresAt, redirectUri);
     }
 
-    async exchangeCode(code: string, clientId: string) {
+    async exchangeCode(code: string, clientId: string, clientSecret: string, redirectUri: string) {
         const stored = await this.codeRepo.find(code);
 
         if (!stored) throw new UnauthorizedException('Invalid code');
 
         // validate client
-        if (stored.client_id !== clientId) {
+        const app = await this.appsService.findByClientId(clientId);
+        if (!app) {
             throw new UnauthorizedException('Invalid client');
         }
 
-        // fetch app
-        const app = await this.appsService.findByClientId(clientId);
-        if (!app) {
-            throw new UnauthorizedException('App not found');
+        // validate secret
+        if (app.client_secret !== clientSecret) {
+            throw new UnauthorizedException('Invalid client secret');
+        }
+
+        // validate redirect URI
+        if (stored.redirect_uri != redirectUri) {
+            throw new UnauthorizedException('Invalid redirect URI');
+        }
+
+        // validate ownership
+        if (stored.client_id != clientId) {
+            throw new UnauthorizedException('Code does not belong to client');
         }
 
         // check expiry

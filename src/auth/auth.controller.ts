@@ -2,11 +2,13 @@ import { Controller, Get, Post, Body, UseGuards, Req, Query, Res, UnauthorizedEx
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt.guard';
+import { AppsService } from 'src/apps/apps.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
+    private appsService: AppsService,
   ) {}
 
   @Post('signup')
@@ -26,7 +28,7 @@ export class AuthController {
       // Generate authorization code
       const code = Math.random().toString(36).substring(2);
 
-      await this.authService.saveCode(user.id, body.client_id, code);
+      await this.authService.saveCode(user.id, body.client_id, body.redirect_uri, code);
 
       return res.redirect(
           `${body.redirect_uri}?code=${code}`
@@ -55,15 +57,24 @@ export class AuthController {
         @Query('redirect_uri') redirectUri: string,
         @Res() res: Response,
     ) {
-        // For now assume user is logged in (we’ll improve later)
+        const app = await this.appsService.findByClientId(clientId);
+
+        if (!app) {
+            throw new UnauthorizedException('Invalid client');
+        }
+
+        // Validate redirect URI
+        if (app.redirect_uri !== redirectUri) {
+            throw new UnauthorizedException('Invalid redirect URI');
+        }
 
         return res.redirect(`/auth/login?client_id=${clientId}&redirect_uri=${redirectUri}`);
     }
 
     @Post('token')
     async token(@Body() body) {
-        const { code, client_id} = body;
-        return this.authService.exchangeCode(code, client_id);
+        const { code, client_id, client_secret, redirect_uri} = body;
+        return this.authService.exchangeCode(code, client_id, client_secret, redirect_uri);
     }
 
     @Get('login')
