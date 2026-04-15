@@ -39,11 +39,14 @@ export class AuthService {
   }
 
     async generateToken(user: any, app: any) {
+        const scopes = this.appsService.parseScopes(app.scopes);
+
         const payload = {
             sub: user.id,
             email: user.email,
             role: user.role,
             client_id: app.client_id,
+            scopes,
         };
 
         const accessToken = this.jwtService.sign(payload, {

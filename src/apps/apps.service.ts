@@ -11,4 +11,8 @@ export class AppsService {
     findByClientId(clientId: string) {
         return this.appRepo.findByClientId(clientId);
     }
+
+    parseScopes(scopes: string): string[] {
+        return scopes ? scopes.split(',') : [];
+    }
 }
