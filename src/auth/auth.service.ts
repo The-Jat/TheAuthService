@@ -5,6 +5,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AppsService } from 'src/apps/apps.service';
 import type { TokenRepository } from './interfaces/token.repository';
 import type { BlacklistRepository } from './interfaces/blacklist.repository';
+import type { CodeRepository } from './interfaces/code.repository';
 @Injectable()
 export class AuthService {
   constructor(
@@ -15,6 +16,8 @@ export class AuthService {
     private tokenRepo: TokenRepository,
     @Inject('BlacklistRepository')
     private blacklistRepo: BlacklistRepository,
+    @Inject('CodeRepository')
+    private codeRepo: CodeRepository,
 ) {}
 
   async signup(email: string, password: string, name: string) {
@@ -122,5 +125,42 @@ export class AuthService {
         await this.blacklistRepo.add(accessToken, decoded.exp);
 
         return { message: 'Logged out successfully' };
+    }
+
+    async saveCode(userId: number, clientId: string, code: string) {
+        const expiresAt = Math.floor(Date.now() / 1000) + 300; // 5 min
+
+        await this.codeRepo.create(userId, clientId, code, expiresAt);
+    }
+
+    async exchangeCode(code: string, clientId: string) {
+        const stored = await this.codeRepo.find(code);
+
+        if (!stored) throw new UnauthorizedException('Invalid code');
+
+        // validate client
+        if (stored.client_id !== clientId) {
+            throw new UnauthorizedException('Invalid client');
+        }
+
+        // fetch app
+        const app = await this.appsService.findByClientId(clientId);
+        if (!app) {
+            throw new UnauthorizedException('App not found');
+        }
+
+        // check expiry
+        const now = Math.floor(Date.now() / 1000);
+        const expiresAt = new Date(stored.expires_at).getTime() / 1000;
+        if (now > expiresAt) {
+            throw new UnauthorizedException('Code expired');
+        }
+
+        // delete code (one-time use)
+        await this.codeRepo.delete(code);
+
+        const user = await this.usersService.findById(stored.user_id);
+
+        return this.generateToken(user, app);
     }
 }

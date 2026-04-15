@@ -1,6 +1,6 @@
-import { Controller, Get, Post, Body, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Query, Res, UnauthorizedException } from '@nestjs/common';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
-import { JwtService } from '@nestjs/jwt';
 import { JwtAuthGuard } from './jwt.guard';
 
 @Controller('auth')
@@ -19,23 +19,25 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() body) {
-      const { email, password, client_id, client_secret } = body;
+  async login(@Body() body, @Res() res: Response) {
+      const user = await this.authService.validate(body.email, body.password);
 
-      const user = await this.authService.validate(email, password);
-      if (!user) throw new UnauthorizedException();
+      if (!user) throw new UnauthorizedException('User Doesnt exist');
+      // Generate authorization code
+      const code = Math.random().toString(36).substring(2);
 
-      const app = await this.authService.validateApp(client_id, client_secret);
-      if (!app) throw new UnauthorizedException('Invalid client');
+      await this.authService.saveCode(user.id, body.client_id, code);
 
-      return this.authService.generateToken(user, app);
+      return res.redirect(
+          `${body.redirect_uri}?code=${code}`
+      );
   }
 
-  @Get('me')
-  @UseGuards(JwtAuthGuard)
-  getMe(@Req() req) {
-     return this.authService.getProfile(req.user.sub);
-  }
+    @Get('me')
+    @UseGuards(JwtAuthGuard)
+    getMe(@Req() req) {
+        return this.authService.getProfile(req.user.sub);
+    }
 
     @Post('refresh')
     async refresh(@Body() body) {
@@ -45,5 +47,46 @@ export class AuthController {
     @Post('logout')
     async logout(@Body() body) {
         return this.authService.logout(body.refresh_token, body.access_token);
+    }
+
+    @Get('authorize')
+    async authorize(
+        @Query('client_id') clientId: string,
+        @Query('redirect_uri') redirectUri: string,
+        @Res() res: Response,
+    ) {
+        // For now assume user is logged in (we’ll improve later)
+
+        return res.redirect(`/auth/login?client_id=${clientId}&redirect_uri=${redirectUri}`);
+    }
+
+    @Post('token')
+    async token(@Body() body) {
+        const { code, client_id} = body;
+        return this.authService.exchangeCode(code, client_id);
+    }
+
+    @Get('login')
+    showLogin(
+        @Query('client_id') clientId: string,
+        @Query('redirect_uri') redirectUri: string,
+        @Res() res: Response,
+    ) {
+        return res.send(`
+    <html>
+      <body>
+        <h2>Login</h2>
+        <form method="POST" action="/auth/login">
+          <input type="hidden" name="client_id" value="${clientId}" />
+          <input type="hidden" name="redirect_uri" value="${redirectUri}" />
+
+          <input name="email" placeholder="Email" />
+          <input name="password" type="password" placeholder="Password" />
+
+          <button type="submit">Login</button>
+        </form>
+      </body>
+    </html>
+  `);
     }
 }

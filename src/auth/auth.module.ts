@@ -8,6 +8,7 @@ import { DatabaseModule } from 'src/database/database.module';
 import { PostgresBlacklistRepository } from './repositories/postgres-blacklist.repository';
 import { TokenModule } from './token.module';
 import { BlacklistModule } from './blacklist.module';
+import { CodeModule } from './code.module';
 
 @Module({
   providers: [
@@ -25,6 +26,7 @@ import { BlacklistModule } from './blacklist.module';
     DatabaseModule,
     TokenModule,
     BlacklistModule,
+    CodeModule,
   ],
 })
 export class AuthModule {}
