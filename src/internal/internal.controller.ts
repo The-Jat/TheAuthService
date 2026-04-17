@@ -1,5 +1,5 @@
 import { UseGuards, Get, Controller } from '@nestjs/common';
-import { ApiKeyGuard } from '../auth/api-key.guard';
+import { ApiKeyGuard } from '../auth/presentation/guards/api-key.guard';
 
 @Controller('internal')
 export class InternalController {

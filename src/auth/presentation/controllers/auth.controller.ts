@@ -1,14 +1,20 @@
-import { Controller, Get, Post, Body, UseGuards, Req, Query, Res, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, UseGuards, Req, Query, Res, Inject, UnauthorizedException } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthService } from './auth.service';
-import { JwtAuthGuard } from './jwt.guard';
-import { AppsService } from 'src/apps/apps.service';
+import { AuthService } from '../../application/auth.service';
+import { JwtAuthGuard } from '../../presentation/guards/jwt.guard';
+// import { AppsService } from 'src/apps/apps.service';
+import { OAuthService } from '../../application/oauth.service';
+import { TokenService } from '../../application/token.service';
+import type { AppRepository } from 'src/apps/domain/app.repository';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private authService: AuthService,
-    private appsService: AppsService,
+    @Inject('AppRepository')
+    private appRepo: AppRepository,
+    private oauthService: OAuthService,
+    private tokenService: TokenService,
   ) {}
 
   @Post('signup')
@@ -26,9 +32,13 @@ export class AuthController {
 
       if (!user) throw new UnauthorizedException('User Doesnt exist');
       // Generate authorization code
-      const code = Math.random().toString(36).substring(2);
+      const code = await this.oauthService.generateCode(
+        user.id,
+        body.client_id,
+        body.redirect_uri,
+      );
 
-      await this.authService.saveCode(user.id, body.client_id, body.redirect_uri, code);
+    //   await this.authService.saveCode(user.id, body.client_id, body.redirect_uri, code);
 
       return res.redirect(
           `${body.redirect_uri}?code=${code}`
@@ -43,12 +53,12 @@ export class AuthController {
 
     @Post('refresh')
     async refresh(@Body() body) {
-        return this.authService.refreshToken(body.refresh_token);
+        return this.tokenService.refreshToken(body.refresh_token);
     }
 
     @Post('logout')
     async logout(@Body() body) {
-        return this.authService.logout(body.refresh_token, body.access_token);
+        return this.tokenService.logout(body.refresh_token, body.access_token);
     }
 
     @Get('authorize')
@@ -57,7 +67,7 @@ export class AuthController {
         @Query('redirect_uri') redirectUri: string,
         @Res() res: Response,
     ) {
-        const app = await this.appsService.findByClientId(clientId);
+        const app = await this.appRepo.findByClientId(clientId);
 
         if (!app) {
             throw new UnauthorizedException('Invalid client');
@@ -73,8 +83,14 @@ export class AuthController {
 
     @Post('token')
     async token(@Body() body) {
-        const { code, client_id, client_secret, redirect_uri} = body;
-        return this.authService.exchangeCode(code, client_id, client_secret, redirect_uri);
+        // const { code, client_id, client_secret, redirect_uri} = body;
+        // return this.authService.exchangeCode(code, client_id, client_secret, redirect_uri);
+        return this.oauthService.exchangeCode(
+            body.code,
+            body.client_id,
+            body.client_secret,
+            body.redirect_uri,
+        );
     }
 
     @Get('login')

@@ -1,17 +1,18 @@
 import { Module } from '@nestjs/common';
 import { AppsService } from './apps.service';
 import { DatabaseModule } from '../database/database.module';
-import { PostgresAppRepository } from './repositories/postgres-app.repository';
+// import { PostgresAppRepository } from './repositories/postgres-app.repository';
+import { PgAppRepository } from './infrastructure/pg-app.repository';
 
 @Module({
   imports: [DatabaseModule],
   providers: [
-    AppsService,
+    // AppsService,
     {
         provide: 'AppRepository',
-        useClass: PostgresAppRepository,
+        useClass: PgAppRepository,
     }
 ],
-  exports: [AppsService],
+  exports: ['AppRepository'],
 })
 export class AppsModule {}
