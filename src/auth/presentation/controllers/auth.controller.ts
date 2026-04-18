@@ -11,8 +11,8 @@ import type { AppRepository } from 'src/apps/domain/app.repository';
 export class AuthController {
   constructor(
     private authService: AuthService,
-    @Inject('AppRepository')
-    private appRepo: AppRepository,
+    // @Inject('AppRepository')
+    // private appRepo: AppRepository,
     private oauthService: OAuthService,
     private tokenService: TokenService,
   ) {}
@@ -67,16 +67,18 @@ export class AuthController {
         @Query('redirect_uri') redirectUri: string,
         @Res() res: Response,
     ) {
-        const app = await this.appRepo.findByClientId(clientId);
+        await this.oauthService.validateClient(clientId, redirectUri);
 
-        if (!app) {
-            throw new UnauthorizedException('Invalid client');
-        }
+        // const app = await this.appRepo.findByClientId(clientId);
 
-        // Validate redirect URI
-        if (app.redirect_uri !== redirectUri) {
-            throw new UnauthorizedException('Invalid redirect URI');
-        }
+        // if (!app) {
+        //     throw new UnauthorizedException('Invalid client');
+        // }
+
+        // // Validate redirect URI
+        // if (app.redirect_uri !== redirectUri) {
+        //     throw new UnauthorizedException('Invalid redirect URI');
+        // }
 
         return res.redirect(`/auth/login?client_id=${clientId}&redirect_uri=${redirectUri}`);
     }

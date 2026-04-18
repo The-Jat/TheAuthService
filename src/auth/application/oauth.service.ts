@@ -83,4 +83,18 @@ export class OAuthService {
       refresh_token: this.tokenService.generateRefreshToken({ sub: user.id }),
     };
   }
+
+  async validateClient(clientId: string, redirectUri: string) {
+    const app = await this.appRepo.findByClientId(clientId);
+
+    if (!app) {
+      throw new UnauthorizedException('Invalid client');
+    }
+
+    if (app.redirect_uri !== redirectUri) {
+      throw new UnauthorizedException('Invalid redirect URI');
+    }
+
+    return app;
+  }
 }
