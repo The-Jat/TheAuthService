@@ -11,12 +11,12 @@ export class PgCodeRepository implements CodeRepository {
     userId: number,
     clientId: string,
     code: string,
-    expiresAt: number,
+    expiresAt: Date,
     redirectUri: string,
   ): Promise<void> {
     await this.db.query(
       `INSERT INTO auth_codes (user_id, client_id, code, expires_at, redirect_uri)
-       VALUES ($1, $2, $3, to_timestamp($4), $5)`,
+       VALUES ($1, $2, $3, $4, $5)`,
       [userId, clientId, code, expiresAt, redirectUri],
     );
   }

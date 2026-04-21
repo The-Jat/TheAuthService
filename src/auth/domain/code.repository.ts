@@ -5,7 +5,7 @@ export interface CodeRepository {
     userId: number,
     clientId: string,
     code: string,
-    expiresAt: number,
+    expiresAt: Date,
     redirectUri: string,
   ): Promise<void>;
 
