@@ -1,23 +1,23 @@
-import { Module } from '@nestjs/common';
-import { UsersService } from './users.service';
+import { forwardRef, Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { DatabaseModule } from '../database/database.module';
-import { AuthCoreModule } from 'src/auth/auth-core.module';
-import { PostgresUserRepository } from './repositories/postgres-user.repository';
-import { BlacklistModule } from 'src/auth/blacklist.module';
+import { PgUserRepository } from './infrastructure/pg-user.repository';
+import { AuthModule } from 'src/auth/auth.module';
+import { UsersService } from './users.service';
 
 @Module({
   imports: [
-    DatabaseModule, AuthCoreModule, BlacklistModule
+    DatabaseModule,
+    forwardRef(() => AuthModule),
   ],
   providers: [
     UsersService,
     {
       provide: 'UserRepository',
-      useClass: PostgresUserRepository,
+      useClass: PgUserRepository,
     }
   ],
   controllers: [UsersController],
-  exports: [UsersService],
+  exports: ['UserRepository'],
 })
 export class UsersModule {}

@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../database/database.service';
-import type { BlacklistRepository } from '../interfaces/blacklist.repository';
+import { DatabaseService } from '../../../database/database.service';
+import { BlacklistRepository } from '../../domain/blacklist.repository';
 
 @Injectable()
-export class PostgresBlacklistRepository implements BlacklistRepository {
+export class PgBlacklistRepository implements BlacklistRepository {
   constructor(private db: DatabaseService) {}
 
-  async add(token: string, expiresAt: number) {
+  async add(token: string, expiresAt: number): Promise<void> {
     await this.db.query(
       `INSERT INTO token_blacklist (token, expires_at)
        VALUES ($1, to_timestamp($2))`,

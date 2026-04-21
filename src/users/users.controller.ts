@@ -1,13 +1,16 @@
-import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards, Inject } from '@nestjs/common';
+// import { UsersService } from './users.service';
+import { JwtAuthGuard } from '../auth/presentation/guards/jwt.guard';
+import { RolesGuard } from '../auth/presentation/guards/roles.guard';
+import { Roles } from '../auth/presentation/decorators/roles.decorator';
+import { ScopesGuard } from 'src/auth/presentation/guards/scopes.guard';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/jwt.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { ScopesGuard } from 'src/auth/scopes.guard';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(
+    private usersService: UsersService,
+  ) {}
 
   @Post()
   createUser(@Body() body: any) {
