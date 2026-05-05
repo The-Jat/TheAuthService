@@ -30,6 +30,8 @@ export class AuthController {
   async login(@Body() body, @Res() res: Response) {
       const user = await this.authService.validate(body.email, body.password);
 
+      const state = body.state;
+
       if (!user) throw new UnauthorizedException('User Doesnt exist');
       // Generate authorization code
       const code = await this.oauthService.generateCode(
@@ -41,7 +43,7 @@ export class AuthController {
     //   await this.authService.saveCode(user.id, body.client_id, body.redirect_uri, code);
 
       return res.redirect(
-          `${body.redirect_uri}?code=${code}`
+          `${body.redirect_uri}?code=${code}&state=${state}`
       );
   }
 
@@ -99,6 +101,7 @@ export class AuthController {
     showLogin(
         @Query('client_id') clientId: string,
         @Query('redirect_uri') redirectUri: string,
+        @Query('state') state: string,
         @Res() res: Response,
     ) {
         return res.send(`
@@ -108,6 +111,7 @@ export class AuthController {
         <form method="POST" action="/auth/login">
           <input type="hidden" name="client_id" value="${clientId}" />
           <input type="hidden" name="redirect_uri" value="${redirectUri}" />
+          <input type="hidden" name="state" value="${state}" />
 
           <input name="email" placeholder="Email" />
           <input name="password" type="password" placeholder="Password" />
