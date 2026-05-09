@@ -4,6 +4,8 @@ import type { CodeRepository } from '../domain/code.repository';
 import type { UserRepository } from 'src/users/domain/user.repository';
 import { TokenService } from './token.service';
 import type { TokenRepository } from '../domain/token.repository';
+import * as bcrypt from 'bcrypt';
+
 
 @Injectable()
 export class OAuthService {
@@ -47,9 +49,19 @@ export class OAuthService {
         }
 
     // validate secret
-        if (app.client_secret !== clientSecret) {
-            throw new UnauthorizedException('Invalid client secret');
-        }
+        // if (app.client_secret !== clientSecret) {
+        //     throw new UnauthorizedException('Invalid client secret');
+        // }
+    const validSecret = await bcrypt.compare(
+      clientSecret,
+      app.client_secret,
+    );
+
+    if (!validSecret) {
+      throw new UnauthorizedException(
+        'Invalid client secret'
+      );
+    }
 
         // validate redirect URI
         if (stored.redirect_uri != redirectUri) {
@@ -57,6 +69,8 @@ export class OAuthService {
         }
 
         // validate ownership
+        this.logger.log(`stored client_id = ${stored.client_id}`);
+        this.logger.log(`recieved client_id = ${clientId}`);
         if (stored.client_id != clientId) {
             throw new UnauthorizedException('Code does not belong to client');
         }

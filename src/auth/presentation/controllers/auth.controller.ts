@@ -6,9 +6,11 @@ import { JwtAuthGuard } from '../../presentation/guards/jwt.guard';
 import { OAuthService } from '../../application/oauth.service';
 import { TokenService } from '../../application/token.service';
 import type { AppRepository } from 'src/apps/domain/app.repository';
+import { Logger } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
+  private logger = new Logger(AuthController.name);
   constructor(
     private authService: AuthService,
     // @Inject('AppRepository')
@@ -19,6 +21,9 @@ export class AuthController {
 
   @Post('signup')
   signup(@Body() body) {
+    this.logger.log(
+    `Signup attempt for ${body.email}`
+    );
     return this.authService.signup(
       body.email,
       body.password,
@@ -26,25 +31,63 @@ export class AuthController {
     );
   }
 
+//   @Post('login')
+//   async login(@Body() body, @Res() res: Response) {
+//       const user = await this.authService.validate(body.email, body.password);
+
+//       const state = body.state;
+
+//       if (!user) throw new UnauthorizedException('User Doesnt exist');
+//       // Generate authorization code
+//       const code = await this.oauthService.generateCode(
+//         user.id,
+//         body.client_id,
+//         body.redirect_uri,
+//       );
+
+//     //   await this.authService.saveCode(user.id, body.client_id, body.redirect_uri, code);
+
+//       // return res.redirect(
+//       //     `${body.redirect_uri}?code=${code}&state=${state}`
+//       // );
+//       return {
+//   redirect_to: `${body.redirect_uri}?code=${code}&state=${state}`
+// };
+//   }
+
   @Post('login')
-  async login(@Body() body, @Res() res: Response) {
-      const user = await this.authService.validate(body.email, body.password);
+  async login(@Body() body) {
+    this.logger.log(
+    `Login attempt for ${body.email}`
+    );
+    
+    const user = await this.authService.validate(
+      body.email,
+      body.password,
+    );
 
-      const state = body.state;
+    const state = body.state;
 
-      if (!user) throw new UnauthorizedException('User Doesnt exist');
-      // Generate authorization code
-      const code = await this.oauthService.generateCode(
-        user.id,
-        body.client_id,
-        body.redirect_uri,
-      );
+    if (!user) {
+       this.logger.warn(
+      `Invalid credentials for ${body.email}`
+    );
+      throw new UnauthorizedException('User Doesnt exist');
+    }
 
-    //   await this.authService.saveCode(user.id, body.client_id, body.redirect_uri, code);
+    const code = await this.oauthService.generateCode(
+      user.id,
+      body.client_id,
+      body.redirect_uri,
+    );
 
-      return res.redirect(
-          `${body.redirect_uri}?code=${code}&state=${state}`
-      );
+    this.logger.log(
+    `OAuth code generated for user ${user.id}`
+  );
+
+    return {
+      redirect_to: `${body.redirect_uri}?code=${code}&state=${state}`,
+    };
   }
 
     @Get('me')
@@ -67,9 +110,13 @@ export class AuthController {
     async authorize(
         @Query('client_id') clientId: string,
         @Query('redirect_uri') redirectUri: string,
+        @Query('state') state: string,
         @Res() res: Response,
     ) {
         await this.oauthService.validateClient(clientId, redirectUri);
+        if (!state) {
+          throw new UnauthorizedException('Missing state');
+        }
 
         // const app = await this.appRepo.findByClientId(clientId);
 
@@ -82,7 +129,16 @@ export class AuthController {
         //     throw new UnauthorizedException('Invalid redirect URI');
         // }
 
-        return res.redirect(`/auth/login?client_id=${clientId}&redirect_uri=${redirectUri}`);
+        // return res.redirect(`/auth/login?client_id=${clientId}&redirect_uri=${redirectUri}`);
+        // return res.redirect(
+        //     `http://localhost:3001/login?client_id=${clientId}&redirect_uri=${redirectUri}&state=${state}`
+        // );
+      const frontendUrl = process.env.AUTH_FRONTEND_URL;
+      const loginRoute = process.env.AUTH_FRONTEND_LOGIN_ROUTE;
+
+      return res.redirect(
+        `${frontendUrl}${loginRoute}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`
+      );
     }
 
     @Post('token')
@@ -97,29 +153,54 @@ export class AuthController {
         );
     }
 
-    @Get('login')
-    showLogin(
-        @Query('client_id') clientId: string,
-        @Query('redirect_uri') redirectUri: string,
-        @Query('state') state: string,
-        @Res() res: Response,
-    ) {
-        return res.send(`
-    <html>
-      <body>
-        <h2>Login</h2>
-        <form method="POST" action="/auth/login">
-          <input type="hidden" name="client_id" value="${clientId}" />
-          <input type="hidden" name="redirect_uri" value="${redirectUri}" />
-          <input type="hidden" name="state" value="${state}" />
+  //   @Get('login')
+  //   showLogin(
+  //       @Query('client_id') clientId: string,
+  //       @Query('redirect_uri') redirectUri: string,
+  //       @Query('state') state: string,
+  //       @Res() res: Response,
+  //   ) {
+  //       return res.send(`
+  //   <html>
+  //     <body>
+  //       <h2>Login</h2>
+  //       <form method="POST" action="/auth/login">
+  //         <input type="hidden" name="client_id" value="${clientId}" />
+  //         <input type="hidden" name="redirect_uri" value="${redirectUri}" />
+  //         <input type="hidden" name="state" value="${state}" />
 
-          <input name="email" placeholder="Email" />
-          <input name="password" type="password" placeholder="Password" />
+  //         <input name="email" placeholder="Email" />
+  //         <input name="password" type="password" placeholder="Password" />
 
-          <button type="submit">Login</button>
-        </form>
-      </body>
-    </html>
-  `);
+  //         <button type="submit">Login</button>
+  //       </form>
+  //     </body>
+  //   </html>
+  // `);
+  //   }
+
+
+  @Post('session')
+  async session(@Body() body) {
+    this.logger.log(
+      `Session login attempt for ${body.email}`,
+    );
+
+    const user = await this.authService.validate(
+      body.email,
+      body.password,
+    );
+
+    if (!user) {
+      this.logger.warn(
+        `Invalid credentials for ${body.email}`,
+      );
+
+      throw new UnauthorizedException(
+        'Invalid credentials',
+      );
     }
+
+    return this.tokenService.createSession(user);
+  }
 }

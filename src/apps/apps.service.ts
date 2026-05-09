@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import type { AppRepository } from './interfaces/app.repository';
+import type { AppRepository } from './domain/app.repository';
 
 @Injectable()
 export class AppsService {
@@ -14,5 +14,19 @@ export class AppsService {
 
     parseScopes(scopes: string): string[] {
         return scopes ? scopes.split(',') : [];
+    }
+
+    createApp(
+        userId: number,
+        name: string,
+        redirectUri: string,
+        scopes: string,
+    ) {
+        return this.appRepo.create({
+            user_id: userId,
+            name,
+            redirect_uri: redirectUri,
+            scopes,
+        });
     }
 }

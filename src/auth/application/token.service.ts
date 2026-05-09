@@ -138,4 +138,46 @@ export class TokenService {
 
         return { message: 'Logged out successfully' };
     }
+
+    async createSession(user: any) {
+        this.logger.log(
+            `Creating session for user ${user.id}`,
+        );
+
+        const payload = {
+            sub: user.id,
+            email: user.email,
+            role: user.role,
+        };
+
+        const accessToken =
+            this.generateAccessToken(payload);
+
+        const refreshToken =
+            this.generateRefreshToken(payload);
+
+        await this.tokenRepo.saveRefreshToken({
+            token: refreshToken,
+            user_id: user.id,
+            expires_at: new Date(
+                Date.now() + 7 * 24 * 60 * 60 * 1000,
+            ),
+        });
+
+        this.logger.log(
+            `Session created for user ${user.id}`,
+        );
+
+        return {
+            access_token: accessToken,
+            refresh_token: refreshToken,
+
+            user: {
+                id: user.id,
+                email: user.email,
+                name: user.name,
+                role: user.role,
+            },
+        };
+    }
 }
