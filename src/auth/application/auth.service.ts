@@ -29,6 +29,13 @@ export class AuthService {
 
   async signup(email: string, password: string, name: string) {
     this.logger.log(`Signup attemp: ${email}`);
+
+    const existingUser = await this.userRepo.findByEmail(email);
+    if (existingUser) {
+      this.logger.log(`Email already exists`);
+      throw new UnauthorizedException('Email already exist');
+    }
+
     const hash = await bcrypt.hash(password, 10);
 
     return this.userRepo.create(email, hash, name);
