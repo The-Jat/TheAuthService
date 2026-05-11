@@ -13,11 +13,13 @@ export class PgCodeRepository implements CodeRepository {
     code: string,
     expiresAt: Date,
     redirectUri: string,
+    codeChallenge: string,
+    codeChallengeMethod: string,
   ): Promise<void> {
     await this.db.query(
-      `INSERT INTO auth_codes (user_id, client_id, code, expires_at, redirect_uri)
-       VALUES ($1, $2, $3, $4, $5)`,
-      [userId, clientId, code, expiresAt, redirectUri],
+      `INSERT INTO auth_codes (user_id, client_id, code, expires_at, redirect_uri, code_challenge, code_challenge_method)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userId, clientId, code, expiresAt, redirectUri, codeChallenge, codeChallengeMethod],
     );
   }
 
@@ -37,6 +39,8 @@ export class PgCodeRepository implements CodeRepository {
       c.client_id,
       c.redirect_uri,
       c.expires_at,
+      c.code_challenge,
+      c.code_challenge_method,
     );
   }
 

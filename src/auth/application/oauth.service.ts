@@ -5,7 +5,7 @@ import type { UserRepository } from 'src/users/domain/user.repository';
 import { TokenService } from './token.service';
 import type { TokenRepository } from '../domain/token.repository';
 import * as bcrypt from 'bcrypt';
-
+import * as crypto from 'crypto';
 
 @Injectable()
 export class OAuthService {
@@ -25,22 +25,38 @@ export class OAuthService {
     private tokenRepo: TokenRepository,
   ) { }
 
-  async generateCode(userId: number, clientId: string, redirectUri: string) {
+  async generateCode(userId: number, clientId: string, redirectUri: string, codeChallenge: string, codeChallengeMethod: string,) {
     const code = Math.random().toString(36).substring(2);
 
     // const expiresAt = Math.floor(Date.now() / 1000) + 300;
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    await this.codeRepo.create(userId, clientId, code, expiresAt, redirectUri);
+    await this.codeRepo.create(userId, clientId, code, expiresAt, redirectUri, codeChallenge, codeChallengeMethod);
 
     return code;
   }
 
-  async exchangeCode(code: string, clientId: string, clientSecret: string, redirectUri: string) {
-    this.logger.log(`Code received: ${code}`);
+  async exchangeCode(code: string, clientId: string, clientSecret: string, redirectUri: string, codeVerifier: string) {
+    this.logger.log(`Code received: ${code} for ${clientId}`);
     const stored = await this.codeRepo.find(code);
 
-    if (!stored) throw new UnauthorizedException('Invalid code');
+    if (!stored) {
+      this.logger.log(`Invalid code`);
+      throw new UnauthorizedException('Invalid code');
+    }
+
+    // PKCE validation
+    const hashedVerifier = crypto
+      .createHash('sha256')
+      .update(codeVerifier)
+      .digest('base64url');
+
+    if (hashedVerifier !== stored.code_challenge) {
+      this.logger.log(`hashedVerifier = ${hashedVerifier}`);
+      this.logger.log('stored.code_challenge = ${stored.code_challenge}');
+      this.logger.log(`Invalid PKCE verifier`);
+      throw new UnauthorizedException('Invalid PKCE verifier',);
+    }
 
     const app = await this.appRepo.findByClientId(clientId);
 
@@ -50,12 +66,7 @@ export class OAuthService {
     }
 
     // validate secret
-    // if (app.client_secret !== clientSecret) {
-    //     throw new UnauthorizedException('Invalid client secret');
-    // }
-    const validSecret = await bcrypt.compare(
-      clientSecret,
-      app.client_secret,
+    const validSecret = await bcrypt.compare(clientSecret, app.client_secret,
     );
 
     if (!validSecret) {

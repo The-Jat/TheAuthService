@@ -79,6 +79,8 @@ export class AuthController {
       user.id,
       body.client_id,
       body.redirect_uri,
+      body.code_challenge,
+      body.code_challenge_method,
     );
 
     this.logger.log(
@@ -111,8 +113,11 @@ export class AuthController {
         @Query('client_id') clientId: string,
         @Query('redirect_uri') redirectUri: string,
         @Query('state') state: string,
+        @Query('code_challenge') codeChallenge: string,
+        @Query('code_challenge_method') codeChallengeMethod: string,
         @Res() res: Response,
     ) {
+        this.logger.log(`Received authorize request`);
         await this.oauthService.validateClient(clientId, redirectUri);
         if (!state) {
           throw new UnauthorizedException('Missing state');
@@ -137,12 +142,13 @@ export class AuthController {
       const loginRoute = process.env.AUTH_FRONTEND_LOGIN_ROUTE;
 
       return res.redirect(
-        `${frontendUrl}${loginRoute}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}`
+        `${frontendUrl}${loginRoute}?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${encodeURIComponent(state)}&code_challenge=${encodeURIComponent(codeChallenge)}&code_challenge_method=${encodeURIComponent(codeChallengeMethod)}`
       );
     }
 
     @Post('token')
     async token(@Body() body) {
+      this.logger.log(`Received token request`);
         // const { code, client_id, client_secret, redirect_uri} = body;
         // return this.authService.exchangeCode(code, client_id, client_secret, redirect_uri);
         return this.oauthService.exchangeCode(
@@ -150,6 +156,7 @@ export class AuthController {
             body.client_id,
             body.client_secret,
             body.redirect_uri,
+            body.code_verifier,
         );
     }
 

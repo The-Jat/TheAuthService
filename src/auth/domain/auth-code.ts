@@ -5,5 +5,8 @@ export class AuthCode {
     public client_id: string,
     public redirect_uri: string,
     public expires_at: Date,
+
+    public code_challenge: string,
+    public code_challenge_method: string,
   ) {}
 }

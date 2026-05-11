@@ -7,6 +7,9 @@ export interface CodeRepository {
     code: string,
     expiresAt: Date,
     redirectUri: string,
+
+    codeChallenge: string,
+    codeChallengeMethod: string,
   ): Promise<void>;
 
   find(code: string): Promise<AuthCode | null>;
