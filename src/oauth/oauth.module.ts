@@ -1,6 +1,6 @@
 import { forwardRef, Module } from '@nestjs/common';
 import { AuthService } from './application/auth.service';
-import { AuthController } from './presentation/controllers/auth.controller';
+import { OAuthController } from './presentation/controllers/oauth.controller';
 import { UsersModule } from 'src/users/users.module';
 import { AuthCoreModule } from './auth-core.module';
 import { AppsModule } from 'src/apps/apps.module';
@@ -31,7 +31,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt.guard';
       useClass: PgBlacklistRepository,
     }
   ],
-  controllers: [AuthController],
+  controllers: [OAuthController],
   imports: [
     forwardRef(() => UsersModule),
     AuthCoreModule,
@@ -40,4 +40,4 @@ import { JwtAuthGuard } from './presentation/guards/jwt.guard';
   ],
   exports: ['CodeRepository', 'TokenRepository', 'BlacklistRepository', JwtAuthGuard, AuthCoreModule],
 })
-export class AuthModule {}
+export class OAuthModule {}

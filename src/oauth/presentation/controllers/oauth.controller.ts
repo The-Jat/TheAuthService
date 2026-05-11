@@ -1,16 +1,16 @@
 import { Controller, Get, Post, Body, UseGuards, Req, Query, Res, Inject, UnauthorizedException } from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from '../../application/auth.service';
-import { JwtAuthGuard } from '../../presentation/guards/jwt.guard';
+import { JwtAuthGuard } from '../guards/jwt.guard';
 // import { AppsService } from 'src/apps/apps.service';
 import { OAuthService } from '../../application/oauth.service';
 import { TokenService } from '../../application/token.service';
 import type { AppRepository } from 'src/apps/domain/app.repository';
 import { Logger } from '@nestjs/common';
 
-@Controller('auth')
-export class AuthController {
-  private logger = new Logger(AuthController.name);
+@Controller('oauth')
+export class OAuthController {
+  private logger = new Logger(OAuthController.name);
   constructor(
     private authService: AuthService,
     // @Inject('AppRepository')
