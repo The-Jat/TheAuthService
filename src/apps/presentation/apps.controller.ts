@@ -8,7 +8,7 @@ import {
 
 import { AppsService } from '../apps.service';
 
-import { JwtAuthGuard } from '../../auth/presentation/guards/jwt.guard';
+import { JwtAuthGuard } from '../../oauth/presentation/guards/jwt.guard';
 
 @Controller('apps')
 export class AppsController {
