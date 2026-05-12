@@ -22,7 +22,6 @@ import { JwtAuthGuard } from './presentation/guards/jwt.guard';
       },
     }),
 
-    // UsersModule,
     DatabaseModule,
   ],
 
@@ -30,7 +29,6 @@ import { JwtAuthGuard } from './presentation/guards/jwt.guard';
     AuthService,
     TokenService,
     JwtAuthGuard,
-    // OAuthService,
 
     {
       provide: 'TokenRepository',
@@ -54,7 +52,6 @@ import { JwtAuthGuard } from './presentation/guards/jwt.guard';
 
     AuthService,
     TokenService,
-    // OAuthService,
 
     'TokenRepository',
     'CodeRepository',

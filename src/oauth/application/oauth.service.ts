@@ -6,7 +6,6 @@ import { TokenService } from '@core/auth/application/token.service';
 import type { TokenRepository } from '@core/auth/domain/token.repository';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-// import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class OAuthService {
@@ -25,7 +24,6 @@ export class OAuthService {
     @Inject('TokenRepository')
     private tokenRepo: TokenRepository,
 
-    // private usersService: UsersService,
   ) { }
 
   async generateCode(userId: number, clientId: string, redirectUri: string, codeChallenge: string, codeChallengeMethod: string,) {
