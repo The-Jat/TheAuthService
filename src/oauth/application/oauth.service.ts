@@ -1,11 +1,12 @@
 import { Injectable, UnauthorizedException, Inject, Logger } from '@nestjs/common';
 import type { AppRepository } from 'src/apps/domain/app.repository';
-import type { CodeRepository } from '../domain/code.repository';
+import type { CodeRepository } from '@core/auth/domain/code.repository';
 import type { UserRepository } from 'src/users/domain/user.repository';
-import { TokenService } from './token.service';
-import type { TokenRepository } from '../domain/token.repository';
+import { TokenService } from '@core/auth/application/token.service';
+import type { TokenRepository } from '@core/auth/domain/token.repository';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+// import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class OAuthService {
@@ -23,6 +24,8 @@ export class OAuthService {
     private tokenService: TokenService,
     @Inject('TokenRepository')
     private tokenRepo: TokenRepository,
+
+    // private usersService: UsersService,
   ) { }
 
   async generateCode(userId: number, clientId: string, redirectUri: string, codeChallenge: string, codeChallengeMethod: string,) {

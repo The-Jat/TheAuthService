@@ -1,18 +1,20 @@
 import { Controller, Get, Post, Body, UseGuards, Req, Query, Res, Inject, UnauthorizedException } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthService } from '../../application/auth.service';
-import { JwtAuthGuard } from '../guards/jwt.guard';
+// import { AuthService } from '@core/auth/application/auth.service';
+import { JwtAuthGuard } from '@core/auth/presentation/guards/jwt.guard';
 // import { AppsService } from 'src/apps/apps.service';
-import { OAuthService } from '../../application/oauth.service';
-import { TokenService } from '../../application/token.service';
-import type { AppRepository } from 'src/apps/domain/app.repository';
+import { OAuthService } from '@oauth/application/oauth.service';
+import { TokenService } from '@core/auth/application/token.service';
+// import type { AppRepository } from 'src/apps/domain/app.repository';
 import { Logger } from '@nestjs/common';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('oauth')
 export class OAuthController {
   private logger = new Logger(OAuthController.name);
   constructor(
-    private authService: AuthService,
+    // private authService: AuthService,
+    private usersService: UsersService,
     // @Inject('AppRepository')
     // private appRepo: AppRepository,
     private oauthService: OAuthService,
@@ -24,7 +26,7 @@ export class OAuthController {
     this.logger.log(
     `Signup attempt for ${body.email}`
     );
-    return this.authService.signup(
+    return this.usersService.signup(
       body.email,
       body.password,
       body.name,
@@ -61,7 +63,7 @@ export class OAuthController {
     `Login attempt for ${body.email}`
     );
     
-    const user = await this.authService.validate(
+    const user = await this.usersService.validate(
       body.email,
       body.password,
     );
@@ -95,7 +97,7 @@ export class OAuthController {
     @Get('me')
     @UseGuards(JwtAuthGuard)
     getMe(@Req() req) {
-        return this.authService.getProfile(req.user.sub);
+        return this.usersService.getProfile(req.user.sub);
     }
 
     @Post('refresh')
@@ -193,7 +195,7 @@ export class OAuthController {
       `Session login attempt for ${body.email}`,
     );
 
-    const user = await this.authService.validate(
+    const user = await this.usersService.validate(
       body.email,
       body.password,
     );

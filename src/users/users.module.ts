@@ -4,11 +4,12 @@ import { DatabaseModule } from '../database/database.module';
 import { PgUserRepository } from './infrastructure/pg-user.repository';
 import { OAuthModule } from 'src/oauth/oauth.module';
 import { UsersService } from './users.service';
+import { AuthModule } from 'src/core/auth/auth.module';
 
 @Module({
   imports: [
     DatabaseModule,
-    forwardRef(() => OAuthModule),
+    AuthModule,
   ],
   providers: [
     UsersService,
@@ -18,6 +19,6 @@ import { UsersService } from './users.service';
     }
   ],
   controllers: [UsersController],
-  exports: ['UserRepository'],
+  exports: ['UserRepository', UsersService],
 })
 export class UsersModule {}

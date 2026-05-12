@@ -5,11 +5,12 @@ import { DatabaseModule } from '../database/database.module';
 import { PgAppRepository } from './infrastructure/pg-app.repository';
 import { AppsController } from './presentation/apps.controller';
 import { OAuthModule } from 'src/oauth/oauth.module';
+import { AuthModule } from 'src/core/auth/auth.module';
 
 @Module({
   imports: [
     DatabaseModule,
-    forwardRef(() => OAuthModule),
+    AuthModule,
   ],
   providers: [
     AppsService,

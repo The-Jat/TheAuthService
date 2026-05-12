@@ -13,7 +13,12 @@
     "target": "ES2023",
     "sourceMap": true,
     "outDir": "./dist",
-    "baseUrl": "./",
+    // "baseUrl": "./",
+    "paths": {
+      "src/*": ["./src/*"],
+      "@core/*": ["./src/core/*"],
+      "@oauth/*": ["./src/oauth/*"]
+    },
     "incremental": true,
     "skipLibCheck": true,
     "strictNullChecks": true,

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../database/database.service';
+import { DatabaseService } from '../../../../database/database.service';
 import { CodeRepository } from '../../domain/code.repository';
 import { AuthCode } from '../../domain/auth-code';
 
