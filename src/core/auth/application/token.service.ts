@@ -26,6 +26,7 @@ export class TokenService {
             expiresIn: '7d',
         });
     }
+
     async refreshToken(token: string) {
         this.logger.log(`refresh attempt`);
 

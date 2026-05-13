@@ -146,6 +146,12 @@ Stored in:
 ```
 auth_codes
 ```
+It contains:
+- ownership
+- redirect URI
+- PKCE challenge
+- expiry
+
 ### Step 7: Redirect Back to Client
 Backend returns:
 ```
@@ -177,13 +183,26 @@ Payload:
 ```
 
 ### Step 9: Backend Validates Code
-Backend validates:
-- code exists
-- code not expired
-- PKCE validation
-- client_id matches
-- client_secret matches
-- redirect_uri matches
+Flow:
+```
+Find auth code
+    ↓
+Validate PKCE
+    ↓
+Validate client
+    ↓
+Validate secret
+    ↓
+Validate redirect URI
+    ↓
+Validate ownership
+    ↓
+Validate expiry
+    ↓
+Delete code
+    ↓
+Issue tokens
+```
 
 PKCE validation:
 The code received in the token request should be same as the one stored in the
@@ -418,4 +437,38 @@ Response:
   "email": "shiv@example.com",
   "name": "Shiv"
 }
+```
+
+## PKCE Architecture
+PKCE (Proof Key for Code Exchange)
+
+### Why PKCE Exists
+It prevents:
+Authorization Code Interception Attacks
+
+### PKCE Flow
+Client creates:
+```
+code_verifier
+```
+
+Then hashes it:
+```
+SHA256(code_verifier)
+```
+
+Stored as:
+```
+code_challenge
+```
+
+### During Token Exchange
+Server recomputes:
+```
+SHA256(code_verifier)
+```
+Then compares against received challenge.
+If mismatch:
+```
+Unauthorized
 ```
