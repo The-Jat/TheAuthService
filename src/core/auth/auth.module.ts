@@ -12,6 +12,7 @@ import { UsersModule } from 'src/users/users.module';
 import { DatabaseModule } from 'src/database/database.module';
 import { OAuthService } from 'src/oauth/application/oauth.service';
 import { JwtAuthGuard } from './presentation/guards/jwt.guard';
+import { EventsModule } from '../events/events.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { JwtAuthGuard } from './presentation/guards/jwt.guard';
     }),
 
     DatabaseModule,
+    EventsModule,
   ],
 
   providers: [

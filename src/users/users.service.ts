@@ -2,13 +2,15 @@ import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import type { UserRepository } from './domain/user.repository';
 import { Logger } from '@nestjs/common';
+import { EventBusService } from 'src/core/events/application/event-bus.service';
 
 @Injectable()
 export class UsersService {
     private logger = new Logger(UsersService.name);
   constructor(
     @Inject('UserRepository')
-    private userRepo: UserRepository
+    private userRepo: UserRepository,
+    private eventBus: EventBusService,
   ) {}
 
     createUser(email: string, password: string, name: string) {
@@ -33,9 +35,32 @@ export class UsersService {
         }
     
         const hash = await bcrypt.hash(password, 10);
-    
-        return this.userRepo.create(email, hash, name);
-        // return this.usersService.createUser( email, hash, name);
+
+        // CREATE USER FIRST
+        const user =
+            await this.userRepo.create(
+                email,
+                hash,
+                name,
+            );
+
+        // THEN EMIT EVENT
+        await this.eventBus.publish({
+            event: 'auth.user.created',
+
+            timestamp:
+                new Date().toISOString(),
+
+            service: 'auth-service',
+
+            data: {
+                userId: user.id,
+                email: user.email,
+                name: user.name,
+            },
+        });
+
+        return user;
       }
     
       async validate(email: string, password: string) {

@@ -5,11 +5,13 @@ import { PgUserRepository } from './infrastructure/pg-user.repository';
 import { OAuthModule } from 'src/oauth/oauth.module';
 import { UsersService } from './users.service';
 import { AuthModule } from 'src/core/auth/auth.module';
+import { EventsModule } from 'src/core/events/events.module';
 
 @Module({
   imports: [
     DatabaseModule,
     AuthModule,
+    EventsModule,
   ],
   providers: [
     UsersService,
