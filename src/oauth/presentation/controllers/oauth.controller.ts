@@ -16,7 +16,10 @@ export class OAuthController {
   ) { }
 
   @Post('signup')
-  signup(@Body() body) {
+  signup(
+    @Body() body,
+    @Req() req,
+  ) {
     this.logger.log(
       `Signup attempt for ${body.email}`
     );
@@ -24,6 +27,7 @@ export class OAuthController {
       body.email,
       body.password,
       body.name,
+      req.correlationId,
     );
   }
 

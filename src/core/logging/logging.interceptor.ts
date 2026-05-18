@@ -31,6 +31,9 @@ export class LoggingInterceptor
         .switchToHttp()
         .getRequest();
 
+      const correlationId =
+          request.correlationId;
+
     const start =
       Date.now();
 
@@ -58,6 +61,8 @@ export class LoggingInterceptor
               'HTTP Request',
 
             meta: {
+              correlationId,
+
               method:
                 request.method,
 

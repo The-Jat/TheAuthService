@@ -27,7 +27,7 @@ export class UsersService {
         return this.userRepo.findById(id);
     }
 
-    async signup(email: string, password: string, name: string) {
+    async signup(email: string, password: string, name: string, correlationId: string,) {
         // this.logger.log(`Signup attemp: ${email}`);
     
         const existingUser = await this.userRepo.findByEmail(email);
@@ -49,6 +49,8 @@ export class UsersService {
         // THEN EMIT EVENT
         await this.eventBus.publish({
             event: 'auth.user.created',
+
+            correlationId,
 
             timestamp:
                 new Date().toISOString(),
