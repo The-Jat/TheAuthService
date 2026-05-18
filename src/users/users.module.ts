@@ -6,12 +6,14 @@ import { OAuthModule } from 'src/oauth/oauth.module';
 import { UsersService } from './users.service';
 import { AuthModule } from 'src/core/auth/auth.module';
 import { EventsModule } from 'src/core/events/events.module';
+import { LoggerModule } from 'src/core/logger/logger.module';
 
 @Module({
   imports: [
     DatabaseModule,
     AuthModule,
     EventsModule,
+    LoggerModule
   ],
   providers: [
     UsersService,
