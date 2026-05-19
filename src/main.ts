@@ -3,6 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { EventBusService } from './core/events/application/event-bus.service';
 import { LoggingInterceptor } from './core/logging/logging.interceptor';
+import { GlobalExceptionFilter } from './core/logging/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -26,6 +27,12 @@ async function bootstrap() {
   const eventBus = app.get(EventBusService);
   app.useGlobalInterceptors(
     new LoggingInterceptor(
+      eventBus,
+    ),
+  );
+
+  app.useGlobalFilters(
+    new GlobalExceptionFilter(
       eventBus,
     ),
   );

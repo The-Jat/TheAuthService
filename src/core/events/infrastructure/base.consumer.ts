@@ -4,6 +4,7 @@ import {
 } from '@nestjs/common';
 
 import { RabbitMQConnection } from './rabbitmq.connection';
+import { DOMAIN_EXCHANGE } from './constants';
 
 export abstract class BaseConsumer
   implements OnModuleInit
@@ -40,7 +41,7 @@ export abstract class BaseConsumer
     for (const key of this.routingKeys) {
       await channel.bindQueue(
         this.queue,
-        'domain.events',
+        DOMAIN_EXCHANGE,
         key,
       );
     }

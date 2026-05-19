@@ -7,6 +7,7 @@ import amqp, {
   Channel,
   ChannelModel,
 } from 'amqplib';
+import { DOMAIN_EXCHANGE } from './constants';
 
 @Injectable()
 export class RabbitMQConnection
@@ -27,7 +28,7 @@ export class RabbitMQConnection
       await this.connection.createChannel();
 
     await this.channel.assertExchange(
-      'domain.events',
+      DOMAIN_EXCHANGE,
       'topic',
       {
         durable: true,
