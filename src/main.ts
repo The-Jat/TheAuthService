@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { EventBusService } from './core/events/application/event-bus.service';
 import { LoggingInterceptor } from './core/logging/logging.interceptor';
 import { GlobalExceptionFilter } from './core/logging/global-exception.filter';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -35,6 +36,14 @@ async function bootstrap() {
     new GlobalExceptionFilter(
       eventBus,
     ),
+  );
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
   );
 
   await app.listen(process.env.PORT ?? 3000);

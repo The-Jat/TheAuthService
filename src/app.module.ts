@@ -7,12 +7,13 @@ import { JwtModule } from '@nestjs/jwt';
 import { DatabaseModule } from './database/database.module';
 import { InternalModule } from './internal/internal.module';
 import { CorrelationMiddleware } from './core/logging/correlation.middleware';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [UsersModule, OAuthModule, JwtModule.register({
       secret: 'supersecret', // temporary (we'll upgrade to RSA later)
       signOptions: { expiresIn: '1h' },
-    }), DatabaseModule, InternalModule,
+    }), DatabaseModule, InternalModule, DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
