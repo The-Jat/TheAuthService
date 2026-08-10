@@ -14,10 +14,15 @@ export class RabbitMQConnection
   implements OnModuleInit
 {
   private connection: ChannelModel;
-
   private channel: Channel;
 
   async onModuleInit() {
+    const rabbitMqUrl = process.env.RABBITMQ_URL;
+
+    if (!rabbitMqUrl) {
+      console.log('RabbitMQ disabled');
+      return;
+    }
     this.connection =
       await amqp.connect(
         process.env.RABBITMQ_URL ||

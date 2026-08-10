@@ -19,6 +19,13 @@ export class RabbitMQEventBus
   ): Promise<void> {
     const channel =
       this.rabbit.getChannel();
+    
+    if (!channel) {
+      console.log(
+        `⚠️ RabbitMQ disabled, skipping event: ${event.event}`,
+      );
+      return;
+    }
 
     channel.publish(
       'domain.events',
