@@ -3,15 +3,14 @@ import { Module } from '@nestjs/common';
 import { DashboardController }
 from './dashboard.controller';
 
-import { UsersModule }
-from 'src/users/users.module';
+import { AuthenticationModule } from 'src/authentication/authentication.module';
 
 import { AuthModule }
 from 'src/core/auth/auth.module';
 
 @Module({
   imports: [
-    UsersModule,
+    AuthenticationModule,
     AuthModule,
   ],
 

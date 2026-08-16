@@ -8,9 +8,10 @@ import { DatabaseModule } from './database/database.module';
 import { InternalModule } from './internal/internal.module';
 import { CorrelationMiddleware } from './core/logging/correlation.middleware';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AuthenticationModule } from './authentication/authentication.module';
 
 @Module({
-  imports: [UsersModule, OAuthModule, JwtModule.register({
+  imports: [AuthenticationModule, UsersModule, OAuthModule, JwtModule.register({
       secret: 'supersecret', // temporary (we'll upgrade to RSA later)
       signOptions: { expiresIn: '1h' },
     }), DatabaseModule, InternalModule, DashboardModule,

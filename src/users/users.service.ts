@@ -16,7 +16,7 @@ export class UsersService {
   ) {}
 
     createUser(email: string, password: string, name: string) {
-        return this.userRepo.create(email, password, name);
+        return this.userRepo.create(email, name);
     }
 
     findByEmail(email: string) {
@@ -39,12 +39,12 @@ export class UsersService {
         const hash = await bcrypt.hash(password, 10);
 
         // CREATE USER FIRST
-        const user =
-            await this.userRepo.create(
+        const user = await this.userRepo.create(
                 email,
-                hash,
                 name,
             );
+        
+        await this.userRepo.createPasswordCredential(user.id, hash);
 
         // THEN EMIT EVENT
         await this.eventBus.publish({
@@ -76,18 +76,18 @@ export class UsersService {
         return user;
       }
     
-      async validate(email: string, password: string) {
-        // this.logger.log(`Login attemp: ${email}`);
+    //   async validate(email: string, password: string) {
+    //     // this.logger.log(`Login attemp: ${email}`);
     
-        const user = await this.userRepo.findByEmail(email);
-        if (!user) return null;
+    //     const user = await this.userRepo.findByEmail(email);
+    //     if (!user) return null;
     
-        // const valid = await bcrypt.compare(password, user.password);
-        const valid = await user.validatePassword(password, bcrypt.compare);
-        if (!valid) return null;
+    //     // const valid = await bcrypt.compare(password, user.password);
+    //     const valid = await user.validatePassword(password, bcrypt.compare);
+    //     if (!valid) return null;
     
-        return user;
-      }
+    //     return user;
+    //   }
     
       async getProfile(userId: number) {
         const user = await this.userRepo.findById(userId);
@@ -97,7 +97,7 @@ export class UsersService {
         }
     
         // remove password before returning
-        const { password, ...safeUser } = user;
+        const { ...safeUser } = user;
     
         return safeUser;
       }

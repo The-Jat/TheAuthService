@@ -7,10 +7,13 @@ import { UsersModule } from 'src/users/users.module';
 import { AppsModule } from 'src/apps/apps.module';
 
 import { AuthModule } from '@core/auth/auth.module';
+import { AuthenticationModule } from 'src/authentication/authentication.module';
+import { OAuthLoginService } from './application/oauth-login.service';
 
 @Module({
   imports: [
     AuthModule,
+    AuthenticationModule,
     UsersModule,
     AppsModule,
   ],
@@ -19,9 +22,12 @@ import { AuthModule } from '@core/auth/auth.module';
 
   providers: [
     OAuthService,
+    OAuthLoginService,
   ],
 
   exports: [
+    OAuthService,
+    OAuthLoginService,
   ],
 })
 export class OAuthModule {}

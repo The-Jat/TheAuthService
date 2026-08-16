@@ -1,7 +1,7 @@
 ## Overview
 This project is a centralized OAuth-style authentication service built using:
 - NestJS backend
-- Nest.js frontend
+- Next.js frontend
 - PostgreSQL database
 - JWT-based authentication
 - Authorization Code Flow

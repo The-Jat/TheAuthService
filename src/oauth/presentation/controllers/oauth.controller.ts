@@ -5,14 +5,22 @@ import { OAuthService } from '@oauth/application/oauth.service';
 import { TokenService } from '@core/auth/application/token.service';
 import { Logger } from '@nestjs/common';
 import { UsersService } from 'src/users/users.service';
+import { AuthenticationService } from 'src/authentication/application/authentication.service';
+import { AuthProviderType } from 'src/authentication/domain/auth-provider.types';
+import type { OAuthLoginRequest } from 'src/oauth/application/oauth-login.request';
+import { OAuthLoginService } from 'src/oauth/application/oauth-login.service';
+import { SessionService } from 'src/authentication/application/session.service';
 
 @Controller('oauth')
 export class OAuthController {
   private logger = new Logger(OAuthController.name);
   constructor(
+    private authenticationService: AuthenticationService,
     private usersService: UsersService,
     private oauthService: OAuthService,
     private tokenService: TokenService,
+    private readonly oauthLoginService: OAuthLoginService,
+    private readonly sessionService: SessionService,
   ) { }
 
   @Post('signup')
@@ -32,40 +40,67 @@ export class OAuthController {
   }
 
   @Post('login')
-  async login(@Body() body) {
+  async login(
+    @Body() body: OAuthLoginRequest,
+    @Res({ passthrough: true })
+    res: Response,
+  ) {
     this.logger.log(
-      `Login attempt for ${body.email}`
+      `Login attempt for ${body.client_id}`
     );
+    const result = await this.oauthLoginService.login(body);
 
-    const user = await this.usersService.validate(
-      body.email,
-      body.password,
-    );
-
-    const state = body.state;
-
-    if (!user) {
-      this.logger.warn(
-        `Invalid credentials for ${body.email}`
-      );
-      throw new UnauthorizedException('User Doesnt exist');
-    }
-
-    const code = await this.oauthService.generateCode(
-      user.id,
-      body.client_id,
-      body.redirect_uri,
-      body.code_challenge,
-      body.code_challenge_method,
-    );
-
-    this.logger.log(
-      `OAuth code generated for user ${user.id}`
+    res.cookie(
+      'auth_session',
+      result.sessionToken,
+      {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        maxAge:
+          30 * 24 * 60 * 60 * 1000,
+      },
     );
 
     return {
-      redirect_to: `${body.redirect_uri}?code=${code}&state=${state}`,
-    };
+      redirect_to:
+        result.redirect_to,
+    }
+
+
+    // const user = await this.authenticationService
+    //   .authenticate(
+    //     AuthProviderType.PASSWORD,
+    //     {
+    //       email: body.email,
+    //       password: body.password,
+    //     }
+    //   );
+
+    // const state = body.state;
+
+    // if (!user) {
+    //   this.logger.warn(
+    //     `Invalid credentials for ${body.email}`
+    //   );
+    //   throw new UnauthorizedException('User Doesnt exist');
+    // }
+
+    // const code = await this.oauthService.generateCode(
+    //   user.id,
+    //   body.client_id,
+    //   body.redirect_uri,
+    //   body.code_challenge,
+    //   body.code_challenge_method,
+    // );
+
+    // this.logger.log(
+    //   `OAuth code generated for user ${user.id}`
+    // );
+
+    // return {
+    //   redirect_to: `${body.redirect_uri}?code=${code}&state=${state}`,
+    // };
   }
 
   @Get('me')
@@ -86,6 +121,7 @@ export class OAuthController {
 
   @Get('authorize')
   async authorize(
+    @Req() req,
     @Query('client_id') clientId: string,
     @Query('redirect_uri') redirectUri: string,
     @Query('state') state: string,
@@ -94,9 +130,29 @@ export class OAuthController {
     @Res() res: Response,
   ) {
     this.logger.log(`Received authorize request`);
+
     await this.oauthService.validateClient(clientId, redirectUri);
     if (!state) {
       throw new UnauthorizedException('Missing state');
+    }
+    
+    const sessionToken = req.cookies?.auth_session;
+    if (sessionToken) {
+      const userId = await this.sessionService.validateSession(sessionToken,);
+
+      if (userId) {
+        const code = await this.oauthService.generateCode(
+            userId,
+            clientId,
+            redirectUri,
+            codeChallenge,
+            codeChallengeMethod,
+          );
+
+        return res.redirect(
+          `${redirectUri}?code=${code}&state=${state}`,
+        );
+      }
     }
 
     const frontendUrl = process.env.AUTH_FRONTEND_URL;
@@ -125,10 +181,14 @@ export class OAuthController {
       `Session login attempt for ${body.email}`,
     );
 
-    const user = await this.usersService.validate(
-      body.email,
-      body.password,
-    );
+    const user = await this.authenticationService
+      .authenticate(
+        AuthProviderType.PASSWORD,
+        {
+          email: body.email,
+          password: body.password,
+        }
+      );
 
     if (!user) {
       this.logger.warn(

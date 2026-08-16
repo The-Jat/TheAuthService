@@ -39,6 +39,8 @@ export class OAuthService {
 
   async exchangeCode(code: string, clientId: string, clientSecret: string, redirectUri: string, codeVerifier: string) {
     this.logger.log(`Code received: ${code} for ${clientId}`);
+    this.logger.log(`Code Verifier: ${codeVerifier}`);
+
     const stored = await this.codeRepo.find(code);
 
     if (!stored) {

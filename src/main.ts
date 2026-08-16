@@ -5,11 +5,14 @@ import { EventBusService } from './core/events/application/event-bus.service';
 import { LoggingInterceptor } from './core/logging/logging.interceptor';
 import { GlobalExceptionFilter } from './core/logging/global-exception.filter';
 import { ValidationPipe } from '@nestjs/common';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   // console.log(process.env.CORS_ORIGINS);
   // console.log(process.env.CORS_ORIGINS?.split(','));
+
+  app.use(cookieParser());
 
   app.enableCors({
     origin: (origin, callback) => {

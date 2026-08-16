@@ -8,21 +8,26 @@ import {
 import { UsersService } from 'src/users/users.service';
 
 import { TokenService } from 'src/core/auth/application/token.service';
+import { AuthenticationService } from 'src/authentication/application/authentication.service';
 import { LoginDto } from './dto/login.dto';
+import { AuthProviderType } from 'src/authentication/domain/auth-provider.types';
 
 @Controller('dashboard')
 export class DashboardController {
   constructor(
-    private usersService: UsersService,
+    private authenticationService: AuthenticationService,
     private tokenService: TokenService,
   ) {}
 
   @Post('login')
   async login(@Body() body: LoginDto) {
-    const user = await this.usersService.validate(
-        body.email,
-        body.password,
-      );
+    const user = await this.authenticationService
+    .authenticate(
+      AuthProviderType.PASSWORD,
+      {
+        email: body.email,
+        password: body.password,
+    });
 
     if (!user) {
       throw new UnauthorizedException(

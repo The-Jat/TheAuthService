@@ -5,18 +5,64 @@ import { User } from '../domain/user';
 
 @Injectable()
 export class PgUserRepository implements UserRepository {
-  constructor(private db: DatabaseService) {}
+  constructor(private db: DatabaseService) { }
 
-  async create(email: string, password: string, name: string): Promise<User> {
+  async create(email: string, name: string): Promise<User> {
     const res = await this.db.query(
-      `INSERT INTO users (email, password, name)
-       VALUES ($1, $2, $3)
+      `INSERT INTO users (email, name)
+       VALUES ($1, $2)
        RETURNING *`,
-      [email, password, name],
+      [email, name],
     );
 
     const u = res[0];
-    return new User(u.id, u.email, u.password, u.name, u.role);
+    return new User(u.id, u.email, u.name, u.role);
+  }
+
+  async createPasswordCredential(
+    userId: number,
+    passwordHash: string,
+  ): Promise<void> {
+
+    const credentialRows = await this.db.query<{
+      id: number;
+    }>(
+      `
+    INSERT INTO credentials
+    (
+      user_id,
+      provider
+    )
+    VALUES
+    (
+      $1,
+      'password'
+    )
+    RETURNING id
+    `,
+      [userId],
+    );
+
+    const credentialId = credentialRows[0].id;
+
+    await this.db.query(
+      `
+    INSERT INTO password_credentials
+    (
+      credential_id,
+      password_hash
+    )
+    VALUES
+    (
+      $1,
+      $2
+    )
+    `,
+      [
+        credentialId,
+        passwordHash,
+      ],
+    );
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -28,7 +74,7 @@ export class PgUserRepository implements UserRepository {
     if (!res[0]) return null;
 
     const u = res[0];
-    return new User(u.id, u.email, u.password, u.name, u.role);
+    return new User(u.id, u.email, u.name, u.role);
   }
 
   async findById(id: number): Promise<User | null> {
@@ -40,6 +86,6 @@ export class PgUserRepository implements UserRepository {
     if (!res[0]) return null;
 
     const u = res[0];
-    return new User(u.id, u.email, u.password, u.name, u.role);
+    return new User(u.id, u.email, u.name, u.role);
   }
 }
