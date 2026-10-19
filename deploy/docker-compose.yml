@@ -1,0 +1,135 @@
+# TheJat Accounts ecosystem: auth API + accounts web + logger + notifier,
+# with one Postgres (three databases) and RabbitMQ, sized for a 2 GB server.
+#
+# Expects the four repos cloned side by side:
+#   ~/thejat/the-auth-service            (this file lives in ./deploy)
+#   ~/thejat/the-auth-service-frontend
+#   ~/thejat/the-logger-service
+#   ~/thejat/the-notification-service
+#
+# Only the API (4000) and web (4001) are published, and only on 127.0.0.1:
+# Caddy on the host is the single public entry point.
+
+name: thejat-accounts
+
+x-service: &service
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options: { max-size: '10m', max-file: '3' }
+
+services:
+  db:
+    <<: *service
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?}
+      LOGGER_DB_PASSWORD: ${LOGGER_DB_PASSWORD:?}
+      NOTIFIER_DB_PASSWORD: ${NOTIFIER_DB_PASSWORD:?}
+    command: ['postgres', '-c', 'shared_buffers=64MB', '-c', 'max_connections=60', '-c', 'work_mem=4MB']
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    mem_limit: 256m
+
+  rabbitmq:
+    <<: *service
+    image: rabbitmq:4-alpine
+    hostname: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: thejat
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?}
+    volumes:
+      - rabbit-data:/var/lib/rabbitmq
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/90-thejat.conf:ro
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
+      interval: 10s
+      timeout: 10s
+      retries: 20
+    mem_limit: 320m
+
+  auth-api:
+    <<: *service
+    build: { context: .. }
+    image: thejat/auth-api:latest
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      PUBLIC_URL: ${PUBLIC_URL:?}
+      BRAND_NAME: ${BRAND_NAME:-TheJat Accounts}
+      DATABASE_URL: postgres://auth:${AUTH_DB_PASSWORD}@db:5432/auth
+      RABBITMQ_URL: amqp://thejat:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:?}
+      LOGGER_URL: http://logger:4010
+      NOTIFIER_URL: http://notifier:4020
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      TRUST_PROXY: 1
+    ports: ['127.0.0.1:4000:4000']
+    depends_on:
+      db: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    mem_limit: 256m
+
+  web:
+    <<: *service
+    build:
+      context: ../../the-auth-service-frontend
+      args: { NEXT_PUBLIC_BRAND: '${BRAND_SHORT:-TheJat}' }
+    image: thejat/auth-web:latest
+    environment:
+      AUTH_API_INTERNAL_URL: http://auth-api:4000
+    ports: ['127.0.0.1:4001:3000']
+    depends_on:
+      auth-api: { condition: service_healthy }
+    mem_limit: 256m
+
+  logger:
+    <<: *service
+    build: { context: ../../the-logger-service }
+    image: thejat/logger:latest
+    environment:
+      NODE_ENV: production
+      PORT: 4010
+      DATABASE_URL: postgres://logger:${LOGGER_DB_PASSWORD}@db:5432/logs
+      RABBITMQ_URL: amqp://thejat:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-30}
+    depends_on:
+      db: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    mem_limit: 192m
+
+  notifier:
+    <<: *service
+    build: { context: ../../the-notification-service }
+    image: thejat/notifier:latest
+    environment:
+      NODE_ENV: production
+      PORT: 4020
+      PUBLIC_URL: ${PUBLIC_URL}
+      BRAND_NAME: ${BRAND_NAME:-TheJat Accounts}
+      DATABASE_URL: postgres://notifier:${NOTIFIER_DB_PASSWORD}@db:5432/notifications
+      RABBITMQ_URL: amqp://thejat:${RABBITMQ_PASSWORD}@rabbitmq:5672
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-TheJat Accounts <no-reply@thejat.in>}
+    depends_on:
+      db: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+    mem_limit: 192m
+
+volumes:
+  db-data:
+  rabbit-data:

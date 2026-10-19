@@ -1,32 +1,45 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { OAuthModule } from './oauth/oauth.module';
-import { UsersModule } from './users/users.module';
-import { JwtModule } from '@nestjs/jwt';
+import { Controller, Get, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { SkipThrottle, ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { AccountController } from './account/account.controller';
+import { AdminController } from './admin/admin.controller';
+import { InternalClient } from './admin/internal-client.service';
+import { AuthModule } from './auth/auth.module';
+import { CorrelationMiddleware } from './common/request-context';
 import { DatabaseModule } from './database/database.module';
-import { InternalModule } from './internal/internal.module';
-import { CorrelationMiddleware } from './core/logging/correlation.middleware';
-import { DashboardModule } from './dashboard/dashboard.module';
-import { AuthenticationModule } from './authentication/authentication.module';
+import { DatabaseService } from './database/database.service';
+import { EventsModule } from './events/events.module';
+import { OAuthModule } from './oauth/oauth.module';
+import { SessionsModule } from './sessions/sessions.module';
+import { UsersModule } from './users/users.module';
+
+@Controller('health')
+@SkipThrottle()
+class HealthController {
+  constructor(private readonly db: DatabaseService) {}
+
+  @Get()
+  async health() {
+    await this.db.query('SELECT 1');
+    return { status: 'ok', service: 'auth-service' };
+  }
+}
 
 @Module({
-  imports: [AuthenticationModule, UsersModule, OAuthModule, JwtModule.register({
-      secret: 'supersecret', // temporary (we'll upgrade to RSA later)
-      signOptions: { expiresIn: '1h' },
-    }), DatabaseModule, InternalModule, DashboardModule,
+  imports: [
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 300 }]),
+    DatabaseModule,
+    EventsModule,
+    UsersModule,
+    SessionsModule,
+    AuthModule,
+    OAuthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [HealthController, AccountController, AdminController],
+  providers: [InternalClient, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule implements NestModule {
-
-  // Correlation Id
   configure(consumer: MiddlewareConsumer) {
-    consumer.apply(
-      CorrelationMiddleware,
-    )
-    .forRoutes('*');
+    consumer.apply(CorrelationMiddleware).forRoutes('*');
   }
-
 }

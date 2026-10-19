@@ -1,0 +1,19 @@
+# Append to /etc/caddy/Caddyfile on the host. Caddy gets the HTTPS certificate.
+auth.thejat.in {
+	encode zstd gzip
+
+	# API, OIDC endpoints and discovery go to the NestJS service.
+	handle /api/* {
+		reverse_proxy 127.0.0.1:4000
+	}
+
+	# Everything else is the accounts website.
+	handle {
+		reverse_proxy 127.0.0.1:4001
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+}

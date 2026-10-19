@@ -1,0 +1,9 @@
+# Local end-to-end test only: a Caddy container stands in for the host Caddy.
+#   docker compose --env-file .env.local -f docker-compose.yml -f docker-compose.local.yml up -d --build
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports: ['8089:8080']
+    volumes: ['./Caddyfile.local:/etc/caddy/Caddyfile:ro']
+    entrypoint: ['caddy', 'run', '--config', '/etc/caddy/Caddyfile', '--adapter', 'caddyfile']
+    depends_on: [web]

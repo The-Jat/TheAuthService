@@ -1,33 +1,13 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { ClientsService } from './clients.service';
+import { KeysService } from './keys.service';
+import { OAuthController } from './oauth.controller';
+import { OAuthService } from './oauth.service';
 
-import { OAuthController } from './presentation/controllers/oauth.controller';
-import { OAuthService } from './application/oauth.service';
-
-import { UsersModule } from 'src/users/users.module';
-import { AppsModule } from 'src/apps/apps.module';
-
-import { AuthModule } from '@core/auth/auth.module';
-import { AuthenticationModule } from 'src/authentication/authentication.module';
-import { OAuthLoginService } from './application/oauth-login.service';
-
+@Global()
 @Module({
-  imports: [
-    AuthModule,
-    AuthenticationModule,
-    UsersModule,
-    AppsModule,
-  ],
-
   controllers: [OAuthController],
-
-  providers: [
-    OAuthService,
-    OAuthLoginService,
-  ],
-
-  exports: [
-    OAuthService,
-    OAuthLoginService,
-  ],
+  providers: [OAuthService, ClientsService, KeysService],
+  exports: [OAuthService, ClientsService, KeysService],
 })
 export class OAuthModule {}
